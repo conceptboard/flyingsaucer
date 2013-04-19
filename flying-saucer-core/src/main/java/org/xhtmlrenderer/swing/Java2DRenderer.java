@@ -90,13 +90,14 @@ public class Java2DRenderer {
 	 * Whether we've completed rendering; image will only be rendered once.
 	 */
 	private boolean rendered;
+	private boolean renderingPrepared;
 	private String sourceDocument;
 	private String sourceDocumentBase;
 	private int width;
 	private int height;
 	private static final int NO_HEIGHT = -1;
 	private Map renderingHints;
-
+	
 
 	/**
 	 * Base constructor
@@ -260,16 +261,17 @@ public class Java2DRenderer {
 	 * @return The XML rendered as a BufferedImage.
 	 */
 	public BufferedImage getImage() {
+		prepareRendering();
+		render();
+		return outputImage;
+	}
+
+	private void render() {
 		if (!rendered) {
-            setDocument((doc == null ? loadDocument(sourceDocument) : doc), sourceDocumentBase, new XhtmlNamespaceHandler());
-
-			layout(this.width);
-
-			height = this.height == -1 ? root.getHeight() : this.height;
 			outputImage = createBufferedImage(this.width, height);
 			outputDevice = new Java2DOutputDevice(outputImage);
 			Graphics2D newG = (Graphics2D) outputImage.getGraphics();
-			if ( renderingHints != null ) {
+			if (renderingHints != null) {
 				newG.getRenderingHints().putAll(renderingHints);
 			}
 
@@ -283,8 +285,22 @@ public class Java2DRenderer {
 			newG.dispose();
 			rendered = true;
 		}
+	}
 
-		return outputImage;
+	private void prepareRendering() {
+		if (!renderingPrepared) {
+			setDocument((doc == null ? loadDocument(sourceDocument) : doc), sourceDocumentBase, new XhtmlNamespaceHandler());
+
+			layout(this.width);
+
+			height = this.height == -1 ? root.getHeight() : this.height;
+			renderingPrepared = true;
+		}
+	}
+	
+	public Dimension getRenderingDimensions(){
+		prepareRendering();
+		return new Dimension(this.width, this.height);
 	}
 
 	/**
